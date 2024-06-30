@@ -1,18 +1,28 @@
+import twstock as t
+import pandas as p
 import requests
 from bs4 import BeautifulSoup
 
+# 使用 twstock 獲取股票即時資料
+def get_realtime_stock_info(stock_code):
+    stock = t.realtime.get(stock_code)
+    if stock['success']:
+        result = p.DataFrame(stock).T.iloc[1:3]
+        result.columns = ['股票代碼','地區','股票名稱','公司全名','現在時間','最新成交價','成交量','累計成交量','最佳5檔賣出價','最佳5檔賣出量','最佳5檔買進價','最佳5檔買進量','開盤價','最高價','最低價']
+        return result
+    else:
+        return None
+
+# 使用 BeautifulSoup 從 Yahoo 股市獲取資料
 def get_stock_price(stock_code):
-    # Yahoo 股市網址
     url = f'https://tw.stock.yahoo.com/quote/{stock_code}'
-    web = requests.get(url)                          # 取得網頁內容
-    soup = BeautifulSoup(web.text, "html.parser")    # 轉換內容
+    web = requests.get(url)
+    soup = BeautifulSoup(web.text, "html.parser")
 
-    # 解析網頁內容
-    title = soup.find('h1').get_text()               # 找到 h1 的內容
-    price_element = soup.select_one('.Fz\\(32px\\)') # 更精確的選擇器
-    status_element = soup.select_one('.Fz\\(20px\\)') # 更精確的選擇器
+    title = soup.find('h1').get_text()
+    price_element = soup.select_one('.Fz\\(32px\\)')
+    status_element = soup.select_one('.Fz\\(20px\\)')
 
-    # 檢查元素是否存在，並提取文本內容
     if price_element:
         current_price_text = price_element.get_text().strip().replace(',', '')
         try:
@@ -37,6 +47,13 @@ def notify_failure(action):
 
 # 自定義輸入股票代碼
 stock_code = input("請輸入股票代碼：")
+
+# 獲取即時股票資料
+realtime_info = get_realtime_stock_info(stock_code)
+if realtime_info is not None:
+    print(realtime_info)
+else:
+    print("無法獲得即時股票資料")
 
 # 獲取當前股票價格
 title, current_price, status = get_stock_price(stock_code)
