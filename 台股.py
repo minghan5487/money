@@ -79,5 +79,7 @@ if current_price is not None:
             notify_success("賣出")
         else:
             notify_failure("買入和賣出")
+        print(f"設定買入價格：{BUY_PRICE}")
+        print(f"設定賣出價格：{SELL_PRICE}")    
     except ValueError:
         print("輸入的價格不是有效的數字，請重新執行程序。")
