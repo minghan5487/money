@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ stock_code }} 股票資料</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ stock_code }} 股票資料</h1>
+        
+        <!-- 顯示收盤價折線圖 -->
+        <h2>收盤價折線圖</h2>
+        <div>
+            {{ price_plot | safe }}
+        </div>
+
+        <!-- 顯示成交量長條圖 -->
+        <h2>成交量長條圖</h2>
+        <div>
+            {{ amount_plot | safe }}
+        </div>
+
+        <a href="/">回到首頁</a>
+    </div>
+</body>
+</html>
