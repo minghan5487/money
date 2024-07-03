@@ -3,58 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股票資料查詢</title>
+    <title>股票查詢</title>
     <style>
         body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
             font-family: Arial, sans-serif;
-            margin: 20px;
         }
         .container {
-            max-width: 600px;
-            margin: 0 auto;
+            text-align: center;
         }
         form {
-            display: flex;
-            flex-direction: column;
+            display: inline-block;
+            text-align: left;
         }
-        input, select {
-            margin-bottom: 10px;
-            padding: 10px;
-            font-size: 16px;
+        label {
+            display: block;
+            margin-top: 10px;
         }
-        button {
-            padding: 10px;
-            font-size: 16px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
+        input[type="text"], select, input[type="number"], input[type="submit"] {
+            margin-top: 5px;
+            width: 100%;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>股票資料查詢</h1>
+        <h1>股票查詢</h1>
         <form action="/stock" method="post">
-            <label for="stock_code">股票代碼：</label>
+            <label for="stock_code">股票代碼:</label>
             <input type="text" id="stock_code" name="stock_code" required>
-
-            <label for="start_year">開始年份：</label>
-            <input type="number" id="start_year" name="start_year" value="2024" required>
-
-            <label for="start_month">開始月份：</label>
-            <input type="number" id="start_month" name="start_month" value="1" required>
-
-            <label for="end_year">結束年份：</label>
-            <input type="number" id="end_year" name="end_year" value="2024" required>
-
-            <label for="end_month">結束月份：</label>
-            <input type="number" id="end_month" name="end_month" value="12" required>
-
-            <button type="submit">查詢</button>
+            <br>
+            <label for="year">年份:</label>
+            <select id="year" name="year">
+                {% for year in range(2010, 2025) %}
+                <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+            </select>
+            <br>
+            <label for="month">月份:</label>
+            <select id="month" name="month">
+                {% for month in range(1, 13) %}
+                <option value="{{ month }}">{{ month }}</option>
+                {% endfor %}
+            </select>
+        
+            <input type="submit" value="查詢">
         </form>
     </div>
 </body>
