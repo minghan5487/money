@@ -48,8 +48,6 @@ def index():
 
 @app.route('/stock', methods=['POST'])
 def stock():
-    global BUY_PRICE, SELL_PRICE
-
     stock_code = request.form['stock_code']
     year = request.form.get('year')
     month = request.form.get('month')
@@ -92,54 +90,102 @@ def trading_zone():
     global BUY_PRICE, SELL_PRICE, records
 
     if request.method == 'POST':
-        BUY_PRICE = float(request.form['buy_price']) if request.form['buy_price'] else None
-        SELL_PRICE = float(request.form['sell_price']) if request.form['sell_price'] else None
-
         stock_code = request.form['stock_code']
         current_price = float(request.form['current_price'])
+        
+        # 解析買入和賣出價格
+        try:
+            BUY_PRICE = float(request.form['buy_price']) if request.form['buy_price'] else None
+            SELL_PRICE = float(request.form['sell_price']) if request.form['sell_price'] else None
+        except ValueError:
+            BUY_PRICE = None
+            SELL_PRICE = None
 
-        if BUY_PRICE and SELL_PRICE:
-            if BUY_PRICE > current_price and SELL_PRICE < current_price:
+        # 判斷買入和賣出條件
+        if BUY_PRICE is not None and SELL_PRICE is not None:
+            if BUY_PRICE <= current_price and SELL_PRICE > current_price:
                 profit = SELL_PRICE - BUY_PRICE
                 roi = (profit / BUY_PRICE) * 100 if BUY_PRICE != 0 else 0
+                total_return_rate = ((SELL_PRICE - BUY_PRICE) / BUY_PRICE) * 100 if BUY_PRICE != 0 else 0
                 result_message = "買入和賣出設定成功！"
-                records.append({'buy_price': BUY_PRICE, 'sell_price': SELL_PRICE, 'profit': profit, 'roi': round(roi, 2)})
-            elif BUY_PRICE > current_price or BUY_PRICE == current_price:
+                records.append({
+                    'buy_price': BUY_PRICE,
+                    'sell_price': SELL_PRICE,
+                    'profit': profit,
+                    'roi': round(roi, 2),
+                    'total_return_rate': round(total_return_rate, 2)
+                })
+            elif BUY_PRICE <= current_price:
                 profit = 0  # 如果只買入而未達到賣出條件，沒有收益
                 roi = 0
+                total_return_rate = 0
                 result_message = "買入設定成功！"
-                records.append({'buy_price': BUY_PRICE, 'sell_price': None, 'profit': profit, 'roi': roi})
-            elif SELL_PRICE < current_price:
+                records.append({
+                    'buy_price': BUY_PRICE,
+                    'sell_price': None,
+                    'profit': profit,
+                    'roi': roi,
+                    'total_return_rate': total_return_rate
+                })
+            elif SELL_PRICE > current_price:
                 profit = 0  # 如果只賣出而未達到買入條件，沒有收益
                 roi = 0
+                total_return_rate = 0
                 result_message = "賣出設定成功！"
-                records.append({'buy_price': None, 'sell_price': SELL_PRICE, 'profit': profit, 'roi': roi})
+                records.append({
+                    'buy_price': None,
+                    'sell_price': SELL_PRICE,
+                    'profit': profit,
+                    'roi': roi,
+                    'total_return_rate': total_return_rate
+                })
             else:
-                profit = 0  # 買入和賣出條件都未達成，沒有收益
-                roi = 0
                 result_message = "買入和賣出設定失敗！"
-                records.append({'buy_price': None, 'sell_price': None, 'profit': profit, 'roi': roi})
 
-            return redirect(url_for('trading_zone', stock_code=stock_code, current_price=current_price,
-                        buy_price=BUY_PRICE, sell_price=SELL_PRICE,
-                        profit=profit, roi=roi, result_message=result_message))
+        elif BUY_PRICE is not None:
+            if BUY_PRICE <= current_price:
+                profit = 0
+                roi = 0
+                total_return_rate = 0
+                result_message = "買入設定成功！"
+                records.append({
+                    'buy_price': BUY_PRICE,
+                    'sell_price': None,
+                    'profit': profit,
+                    'roi': roi,
+                    'total_return_rate': total_return_rate
+                })
+            else:
+                result_message = "買入設定失敗！"
 
+        elif SELL_PRICE is not None:
+            if SELL_PRICE > current_price:
+                profit = 0
+                roi = 0
+                total_return_rate = 0
+                result_message = "賣出設定成功！"
+                records.append({
+                    'buy_price': None,
+                    'sell_price': SELL_PRICE,
+                    'profit': profit,
+                    'roi': roi,
+                    'total_return_rate': total_return_rate
+                })
+            else:
+                result_message = "賣出設定失敗！"
+
+        else:
+            result_message = "請設定買入或賣出價格！"
+
+        return redirect(url_for('trading_zone', stock_code=stock_code, current_price=current_price,
+                                result_message=result_message))
 
     elif request.method == 'GET':
         stock_code = request.args.get('stock_code')
         current_price = float(request.args.get('current_price'))
-        buy_price = BUY_PRICE
-        sell_price = SELL_PRICE
-
-        if buy_price is not None and sell_price is not None:
-            profit = sell_price - buy_price
-            roi = (profit / buy_price) * 100 if buy_price != 0 else 0
-        else:
-            profit = 0
-            roi = 0
 
         return render_template('trading_zone.html', stock_code=stock_code, current_price=current_price,
-                               buy_price=buy_price, sell_price=sell_price, profit=profit, roi=round(roi, 2),
-                               records=records, result_message=None)
+                               buy_price=BUY_PRICE, sell_price=SELL_PRICE, records=records, result_message=None)
+
 if __name__ == '__main__':
     app.run(debug=True)

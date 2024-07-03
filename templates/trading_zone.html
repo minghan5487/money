@@ -1,76 +1,41 @@
-<!-- trading_zone.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>交易區</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        .container {
-            max-width: 800px;
-            text-align: center;
-        }
-        .profit {
-            margin-top: 20px;
-            font-size: 1.2em;
-        }
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-        }
-    </style>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>{{ stock_code }} 交易區</h1>
+    <div class="container mt-4">
+        <h2>{{ stock_code }} 交易區</h2>
         <p>當前價格: {{ current_price }}</p>
-        
-        <form action="{{ url_for('trading_zone') }}" method="POST">
-            <label for="buy_price">買入價格：</label>
-            <input type="number" id="buy_price" name="buy_price" step="any" value="{{ buy_price }}">
-            <br>
-            <label for="sell_price">賣出價格：</label>
-            <input type="number" id="sell_price" name="sell_price" step="any" value="{{ sell_price }}">
-            <br>
+
+        <form method="POST" action="/trading_zone">
+            <div class="form-group">
+                <label for="buy_price">買入價格：</label>
+                <input type="number" class="form-control" id="buy_price" name="buy_price" value="{{ buy_price }}">
+            </div>
+            <div class="form-group">
+                <label for="sell_price">賣出價格：</label>
+                <input type="number" class="form-control" id="sell_price" name="sell_price" value="{{ sell_price }}">
+            </div>
             <input type="hidden" name="stock_code" value="{{ stock_code }}">
             <input type="hidden" name="current_price" value="{{ current_price }}">
-            <button type="submit">設定</button>
+            <button type="submit" class="btn btn-primary">設定</button>
         </form>
 
-        <div class="profit">
-            {% if profit > 0 %}
-                <p>成功賣出，收益: {{ profit }}</p>
-            {% elif profit == 0 %}
-                <p>未進行有效交易</p>
-            {% else %}
-                <p>未達成賣出條件，無收益</p>
-            {% endif %}
-        </div>
-        
-        <h2>交易紀錄</h2>
-        <table>
-            <thead>
+        <h3>{{ result_message }}</h3>
+
+        <h3>交易紀錄</h3>
+        <table class="table table-bordered table-striped text-center">
+            <thead class="thead-dark">
                 <tr>
                     <th>序號</th>
                     <th>買入價格</th>
                     <th>賣出價格</th>
                     <th>收益</th>
                     <th>投資報酬率</th>
+                    <th>總報酬率</th>
                 </tr>
             </thead>
             <tbody>
@@ -81,6 +46,7 @@
                     <td>{{ record.sell_price if record.sell_price is not none else 'N/A' }}</td>
                     <td>{{ record.profit }}</td>
                     <td>{{ record.roi }}%</td>
+                    <td>{{ record.total_return_rate }}%</td>
                 </tr>
                 {% endfor %}
             </tbody>
