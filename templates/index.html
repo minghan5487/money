@@ -1,57 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票查詢</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            text-align: center;
-        }
-        form {
-            display: inline-block;
-            text-align: left;
-        }
-        label {
-            display: block;
-            margin-top: 10px;
-        }
-        input[type="text"], select, input[type="number"], input[type="submit"] {
-            margin-top: 5px;
-            width: 100%;
-        }
-    </style>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>股票查詢</h1>
-        <form action="/stock" method="post">
-            <label for="stock_code">股票代碼:</label>
-            <input type="text" id="stock_code" name="stock_code" required>
-            <br>
-            <label for="year">年份:</label>
-            <select id="year" name="year">
-                {% for year in range(2010, 2025) %}
-                <option value="{{ year }}">{{ year }}</option>
-                {% endfor %}
-            </select>
-            <br>
-            <label for="month">月份:</label>
-            <select id="month" name="month">
-                {% for month in range(1, 13) %}
-                <option value="{{ month }}">{{ month }}</option>
-                {% endfor %}
-            </select>
-        
-            <input type="submit" value="查詢">
+    <div class="container mt-5">
+        <h1 class="text-center">股票查詢</h1>
+        <form action="/stock" method="post" class="mt-4">
+            <div class="form-group">
+                <label for="stock_code">股票代碼:</label>
+                <input type="text" class="form-control" id="stock_code" name="stock_code" required>
+            </div>
+            <div class="form-group">
+                <label for="year">年份:</label>
+                <select id="year" name="year" class="form-control">
+                    {% for year in range(2010, 2025) %}
+                    <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="month">月份:</label>
+                <select id="month" name="month" class="form-control">
+                    {% for month in range(1, 13) %}
+                    <option value="{{ month }}">{{ month }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">查詢</button>
         </form>
     </div>
 </body>

@@ -2,11 +2,12 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>交易區</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <div class="container mt-4">
+    <div class="container mt-5">
         <h2>{{ stock_code }} 交易區</h2>
         <p>當前價格: {{ current_price }}</p>
 
@@ -24,9 +25,8 @@
             <button type="submit" class="btn btn-primary">設定</button>
         </form>
 
-
-        <h3>交易紀錄</h3>
-        <table class="table table-bordered table-striped text-center">
+        <h3 class="mt-5">交易紀錄</h3>
+        <table class="table table-bordered table-striped text-center mt-3">
             <thead class="thead-dark">
                 <tr>
                     <th>序號</th>

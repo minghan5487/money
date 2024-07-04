@@ -1,43 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票查詢結果</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
+        .current-price {
+            font-size: 1.5em;
         }
-        .container {
-            max-width: 800px;
-            margin: auto;
+        .price-up {
+            color: red;
         }
-        .table {
-            width: 100%;
-            margin-top: 20px;
+        .price-down {
+            color: green;
         }
-        .table th, .table td {
-            padding: 10px;
-            text-align: center;
+        .price-no-change {
+            color: black;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container mt-5">
         <h1>{{ title }}</h1>
-        <p>當前價格: {{ current_price }} ({{ change }})</p>
+        <p class="current-price">當前價格: {{ current_price }} 
+            <span class="{% if change > 0 %}price-up{% elif change < 0 %}price-down{% else %}price-no-change{% endif %}">
+                ({{ change }})
+            </span>
+        </p>
         {{ result|safe }}
-        <div>
+        <div class="mt-4">
             <h2>收盤價折線圖</h2>
             {{ price_plot|safe }}
         </div>
-        <div>
+        <div class="mt-4">
             <h2>成交量長條圖</h2>
             {{ amount_plot|safe }}
         </div>
-        <a href="{{ url_for('trading_zone', stock_code=stock_code, current_price=current_price) }}">進入交易區</a>
+        <a href="{{ url_for('trading_zone', stock_code=stock_code, current_price=current_price) }}" class="btn btn-primary mt-3">進入交易區</a>
     </div>
 </body>
 </html>
