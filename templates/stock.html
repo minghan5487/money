@@ -1,43 +1,102 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股票查詢結果</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Stock Information</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <style>
-        .current-price {
-            font-size: 1.5em;
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            margin: 0;
+            padding: 0;
         }
-        .price-up {
-            color: red;
+        .container {
+            display: flex;
+            align-items: flex-start;
+            margin: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
         }
-        .price-down {
-            color: green;
+        #left-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
         }
-        .price-no-change {
-            color: black;
+        #right-section {
+            margin-left: 450px; /* 調整此邊距以向右移動右側內容 */
+            flex-grow: 1;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            margin: 10px 0;
+            background-color: #007bff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        p {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        .chart-container {
+            margin-top: 20px;
+            width: 100%;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .content {
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1>{{ title }}</h1>
-        <p class="current-price">當前價格: {{ current_price }} 
-            <span class="{% if change > 0 %}price-up{% elif change < 0 %}price-down{% else %}price-no-change{% endif %}">
-                ({{ change }})
-            </span>
-        </p>
-        {{ result|safe }}
-        <div class="mt-4">
-            <h2>收盤價折線圖</h2>
-            {{ price_plot|safe }}
+    <div class="container">
+        <div id="left-section">
+            <form action="{{ url_for('trading_zone') }}" method="get" class="form-inline">
+                <input type="hidden" name="stock_code" value="{{ stock_code }}">
+                <input type="hidden" name="current_price" value="{{ current_price }}">
+                <button type="submit" class="btn btn-primary">進入交易區</button>
+            </form>
         </div>
-        <div class="mt-4">
-            <h2>成交量長條圖</h2>
-            {{ amount_plot|safe }}
+        <div id="right-section">
+            <div class="content">
+                <h1>{{ title }}</h1>
+                <p>目前價格：{{ current_price }}</p>
+                <p>變化：{{ change }}</p>
+                <div class="chart-container">{{ result | safe }}</div>
+                <div class="chart-container">{{ price_plot | safe }}</div>
+                <div class="chart-container">{{ amount_plot | safe }}</div>
+            </div>
         </div>
-        <a href="{{ url_for('trading_zone', stock_code=stock_code, current_price=current_price) }}" class="btn btn-primary mt-3">進入交易區</a>
     </div>
 </body>
 </html>

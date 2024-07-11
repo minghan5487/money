@@ -5,6 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>交易區</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+        .table {
+            margin-top: 20px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
@@ -24,6 +70,8 @@
             <input type="hidden" name="current_price" value="{{ current_price }}">
             <button type="submit" class="btn btn-primary">設定</button>
         </form>
+
+        <button onclick="window.history.back()" class="btn btn-secondary">返回</button>
 
         <h3 class="mt-5">交易紀錄</h3>
         <table class="table table-bordered table-striped text-center mt-3">
