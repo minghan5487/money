@@ -51,17 +51,11 @@ def stock():
     stock_code = request.form['stock_code']
     year = request.form.get('year')
     month = request.form.get('month')
-    
-    # 使用 Yahoo 獲取股票即時資料
     title, current_price, change = get_stock_price(stock_code)
-
-    # 使用 twstock 獲取股票即時資料
     stock_realtime = t.realtime.get(stock_code)
     result = pd.DataFrame(stock_realtime).T.iloc[1:3]
     result.columns = ['股票代碼', '地區', '股票名稱', '公司全名', '現在時間', '最新成交價', '成交量', '累計成交量', 
                       '最佳5檔賣出價', '最佳5檔賣出量', '最佳5檔買進價', '最佳5檔買進量', '開盤價', '最高價', '最低價']
-
-    # 使用 twstock 獲取股票歷史資料
     stock = t.Stock(stock_code)
     if year and month:
         period = stock.fetch(int(year), int(month))
@@ -72,12 +66,8 @@ def stock():
     
     data = pd.DataFrame(period)
     data.columns = ['日期','成交股數','成交量','開盤價','最高價','最低價','收盤價','漲跌價差','成交筆數']
-
-    # 製作收盤價折線圖
     fig_price = e.line(data, x='日期', y='收盤價', title=f'{stock_code} 收盤價')
     price_plot = pi.to_html(fig_price, full_html=False)
-
-    # 製作成交量長條圖
     fig_amount = e.bar(data, x='日期', y='成交量', title=f'{stock_code} 成交量')
     amount_plot = pi.to_html(fig_amount, full_html=False)
 
@@ -92,16 +82,12 @@ def trading_zone():
     if request.method == 'POST':
         stock_code = request.form['stock_code']
         current_price = float(request.form['current_price'])
-        
-        # 解析買入和賣出價格
         try:
             BUY_PRICE = float(request.form['buy_price']) if request.form['buy_price'] else None
             SELL_PRICE = float(request.form['sell_price']) if request.form['sell_price'] else None
         except ValueError:
             BUY_PRICE = None
             SELL_PRICE = None
-
-        # 判斷買入和賣出條件
         if BUY_PRICE is not None and SELL_PRICE is not None:
             if BUY_PRICE <= current_price and SELL_PRICE > current_price:
                 profit = SELL_PRICE - BUY_PRICE
@@ -116,7 +102,7 @@ def trading_zone():
                     'total_return_rate': round(total_return_rate, 2)
                 })
             elif BUY_PRICE <= current_price:
-                profit = 0  # 如果只買入而未達到賣出條件，沒有收益
+                profit = 0 
                 roi = 0
                 total_return_rate = 0
                 result_message = "買入設定成功！"
@@ -128,7 +114,7 @@ def trading_zone():
                     'total_return_rate': total_return_rate
                 })
             elif SELL_PRICE > current_price:
-                profit = 0  # 如果只賣出而未達到買入條件，沒有收益
+                profit = 0  
                 roi = 0
                 total_return_rate = 0
                 result_message = "賣出設定成功！"

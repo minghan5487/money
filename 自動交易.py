@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-# 使用 BeautifulSoup 從 Yahoo 股市獲取資料
+
 def get_stock_price(stock_code):
     url = f'https://tw.stock.yahoo.com/quote/{stock_code}'
     web = requests.get(url)
@@ -33,25 +33,24 @@ def notify_success(action):
 def notify_failure(action):
     print(f"{action} 設定失敗！")
 
-# 自定義輸入股票代碼
+
 stock_code = input("請輸入股票代碼：")
 
-# 獲取當前股票價格
+
 title, current_price, status = get_stock_price(stock_code)
 
-# 輸出當前股票價格和狀態
+
 if current_price is not None:
     print(f'{title} : {current_price} ( {status} )')
 else:
     print("無法獲得當前價格")
 
-# 繼續設定買入和賣出價格，並模擬下單
+
 if current_price is not None:
     try:
         BUY_PRICE = float(input("請設定買入價格："))
         SELL_PRICE = float(input("請設定賣出價格："))
 
-        # 模擬下單過程
         if BUY_PRICE > current_price and SELL_PRICE < current_price:
             notify_success("買入和賣出")
         elif BUY_PRICE > current_price or BUY_PRICE == current_price:
