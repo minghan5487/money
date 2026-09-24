@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>交易區</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <style>
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -56,15 +56,18 @@
     <div class="container mt-5">
         <h2>{{ stock_code }} 交易區</h2>
         <p>當前價格: {{ current_price }}</p>
+        {% if result_message %}
+        <div class="alert {{ 'alert-danger' if '失敗' in result_message or '請設定' in result_message else 'alert-success' }}">{{ result_message }}</div>
+        {% endif %}
 
         <form method="POST" action="/trading_zone">
             <div class="form-group">
                 <label for="buy_price">買入價格：</label>
-                <input type="number" class="form-control" id="buy_price" name="buy_price" value="{{ buy_price }}">
+                <input type="number" step="0.01" class="form-control" id="buy_price" name="buy_price" value="{{ buy_price if buy_price is not none else '' }}">
             </div>
             <div class="form-group">
                 <label for="sell_price">賣出價格：</label>
-                <input type="number" class="form-control" id="sell_price" name="sell_price" value="{{ sell_price }}">
+                <input type="number" step="0.01" class="form-control" id="sell_price" name="sell_price" value="{{ sell_price if sell_price is not none else '' }}">
             </div>
             <input type="hidden" name="stock_code" value="{{ stock_code }}">
             <input type="hidden" name="current_price" value="{{ current_price }}">
@@ -82,7 +85,6 @@
                     <th>賣出價格</th>
                     <th>收益</th>
                     <th>投資報酬率</th>
-                    <th>總報酬率</th>
                 </tr>
             </thead>
             <tbody>
@@ -93,7 +95,6 @@
                     <td>{{ record.sell_price if record.sell_price is not none else 'N/A' }}</td>
                     <td>{{ record.profit }}</td>
                     <td>{{ record.roi }}%</td>
-                    <td>{{ record.total_return_rate }}%</td>
                 </tr>
                 {% endfor %}
             </tbody>

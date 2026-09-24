@@ -1,177 +1,80 @@
-from flask import Flask, render_template, request, redirect, url_for
-import twstock as t
-import pandas as pd
-import plotly.express as e
-import plotly.io as pi
-import requests
-from bs4 import BeautifulSoup
+from datetime import date
+
+import plotly.express as px
+import plotly.io as pio
+from flask import Flask, redirect, render_template, request, url_for
+
+from stock_service import get_history, get_realtime_table, get_stock_price
+from trading import evaluate_order
 
 app = Flask(__name__)
 
-BUY_PRICE = None
-SELL_PRICE = None
-records = []
+# 示範用：交易設定與紀錄存在記憶體中，重新啟動即清空
+state = {'buy_price': None, 'sell_price': None, 'records': []}
 
-def get_stock_price(stock_code):
-    url = f'https://tw.stock.yahoo.com/quote/{stock_code}'
-    web = requests.get(url)
-    soup = BeautifulSoup(web.text, "html.parser")
 
-    title = soup.find('h1').get_text()
-    price_element = soup.select_one('.Fz\\(32px\\)')
-    status_element = soup.select_one('.Fz\\(20px\\)')
+def _parse_price(value):
+    try:
+        return float(value) if value else None
+    except ValueError:
+        return None
 
-    if price_element:
-        current_price_text = price_element.get_text().strip().replace(',', '')
-        try:
-            current_price = float(current_price_text)
-        except ValueError:
-            current_price = None
-    else:
-        current_price = None
-
-    if status_element:
-        status = status_element.get_text().strip()
-        try:
-            change = float(status.replace('+', '').replace('−', '-').replace(',', ''))
-        except ValueError:
-            change = 0
-    else:
-        status = "無法找到狀態"
-        change = 0
-
-    return title, current_price, change
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', current_year=date.today().year)
+
 
 @app.route('/stock', methods=['POST'])
 def stock():
-    stock_code = request.form['stock_code']
+    stock_code = request.form['stock_code'].strip()
     year = request.form.get('year')
     month = request.form.get('month')
-    title, current_price, change = get_stock_price(stock_code)
-    stock_realtime = t.realtime.get(stock_code)
-    result = pd.DataFrame(stock_realtime).T.iloc[1:3]
-    result.columns = ['股票代碼', '地區', '股票名稱', '公司全名', '現在時間', '最新成交價', '成交量', '累計成交量', 
-                      '最佳5檔賣出價', '最佳5檔賣出量', '最佳5檔買進價', '最佳5檔買進量', '開盤價', '最高價', '最低價']
-    stock = t.Stock(stock_code)
-    if year and month:
-        period = stock.fetch(int(year), int(month))
-    elif year:
-        period = stock.fetch_from(int(year), 1)
-    else:
-        period = stock.fetch_31()
-    
-    data = pd.DataFrame(period)
-    data.columns = ['日期','成交股數','成交量','開盤價','最高價','最低價','收盤價','漲跌價差','成交筆數']
-    fig_price = e.line(data, x='日期', y='收盤價', title=f'{stock_code} 收盤價')
-    price_plot = pi.to_html(fig_price, full_html=False)
-    fig_amount = e.bar(data, x='日期', y='成交量', title=f'{stock_code} 成交量')
-    amount_plot = pi.to_html(fig_amount, full_html=False)
 
-    return render_template('stock.html', stock_code=stock_code, result=result.to_html(classes='table table-bordered table-striped text-center'), 
-                           title=title, current_price=current_price, change=change, 
+    try:
+        title, current_price, change = get_stock_price(stock_code)
+        realtime = get_realtime_table(stock_code)
+        history = get_history(stock_code, year, month)
+    except Exception as exc:  # 網路或資料來源異常時回首頁顯示錯誤
+        return render_template('index.html', current_year=date.today().year,
+                               error=f'查詢 {stock_code} 失敗：{exc}')
+
+    price_plot = amount_plot = ''
+    if not history.empty:
+        price_plot = pio.to_html(px.line(history, x='日期', y='收盤價', title=f'{stock_code} 收盤價'),
+                                 full_html=False)
+        amount_plot = pio.to_html(px.bar(history, x='日期', y='成交量', title=f'{stock_code} 成交量'),
+                                  full_html=False)
+
+    result = realtime.to_html(classes='table table-bordered table-striped text-center') if realtime is not None else ''
+    return render_template('stock.html', stock_code=stock_code, title=title,
+                           current_price=current_price, change=change, result=result,
                            price_plot=price_plot, amount_plot=amount_plot)
 
-@app.route('/trading_zone', methods=['POST', 'GET'])
-def trading_zone():
-    global BUY_PRICE, SELL_PRICE, records
 
+@app.route('/trading_zone', methods=['GET', 'POST'])
+def trading_zone():
     if request.method == 'POST':
         stock_code = request.form['stock_code']
         current_price = float(request.form['current_price'])
-        try:
-            BUY_PRICE = float(request.form['buy_price']) if request.form['buy_price'] else None
-            SELL_PRICE = float(request.form['sell_price']) if request.form['sell_price'] else None
-        except ValueError:
-            BUY_PRICE = None
-            SELL_PRICE = None
-        if BUY_PRICE is not None and SELL_PRICE is not None:
-            if BUY_PRICE <= current_price and SELL_PRICE > current_price:
-                profit = SELL_PRICE - BUY_PRICE
-                roi = (profit / BUY_PRICE) * 100 if BUY_PRICE != 0 else 0
-                total_return_rate = ((SELL_PRICE - BUY_PRICE) / BUY_PRICE) * 100 if BUY_PRICE != 0 else 0
-                result_message = "買入和賣出設定成功！"
-                records.append({
-                    'buy_price': BUY_PRICE,
-                    'sell_price': SELL_PRICE,
-                    'profit': profit,
-                    'roi': round(roi, 2),
-                    'total_return_rate': round(total_return_rate, 2)
-                })
-            elif BUY_PRICE <= current_price:
-                profit = 0 
-                roi = 0
-                total_return_rate = 0
-                result_message = "買入設定成功！"
-                records.append({
-                    'buy_price': BUY_PRICE,
-                    'sell_price': None,
-                    'profit': profit,
-                    'roi': roi,
-                    'total_return_rate': total_return_rate
-                })
-            elif SELL_PRICE > current_price:
-                profit = 0  
-                roi = 0
-                total_return_rate = 0
-                result_message = "賣出設定成功！"
-                records.append({
-                    'buy_price': None,
-                    'sell_price': SELL_PRICE,
-                    'profit': profit,
-                    'roi': roi,
-                    'total_return_rate': total_return_rate
-                })
-            else:
-                result_message = "買入和賣出設定失敗！"
+        state['buy_price'] = _parse_price(request.form.get('buy_price'))
+        state['sell_price'] = _parse_price(request.form.get('sell_price'))
 
-        elif BUY_PRICE is not None:
-            if BUY_PRICE <= current_price:
-                profit = 0
-                roi = 0
-                total_return_rate = 0
-                result_message = "買入設定成功！"
-                records.append({
-                    'buy_price': BUY_PRICE,
-                    'sell_price': None,
-                    'profit': profit,
-                    'roi': roi,
-                    'total_return_rate': total_return_rate
-                })
-            else:
-                result_message = "買入設定失敗！"
+        message, record = evaluate_order(current_price, state['buy_price'], state['sell_price'])
+        if record:
+            state['records'].append(record)
+        return redirect(url_for('trading_zone', stock_code=stock_code,
+                                current_price=current_price, result_message=message))
 
-        elif SELL_PRICE is not None:
-            if SELL_PRICE > current_price:
-                profit = 0
-                roi = 0
-                total_return_rate = 0
-                result_message = "賣出設定成功！"
-                records.append({
-                    'buy_price': None,
-                    'sell_price': SELL_PRICE,
-                    'profit': profit,
-                    'roi': roi,
-                    'total_return_rate': total_return_rate
-                })
-            else:
-                result_message = "賣出設定失敗！"
+    stock_code = request.args.get('stock_code')
+    current_price = _parse_price(request.args.get('current_price'))
+    if not stock_code or current_price is None:
+        return redirect(url_for('index'))
 
-        else:
-            result_message = "請設定買入或賣出價格！"
+    return render_template('trading_zone.html', stock_code=stock_code, current_price=current_price,
+                           buy_price=state['buy_price'], sell_price=state['sell_price'],
+                           records=state['records'], result_message=request.args.get('result_message'))
 
-        return redirect(url_for('trading_zone', stock_code=stock_code, current_price=current_price,
-                                result_message=result_message))
-
-    elif request.method == 'GET':
-        stock_code = request.args.get('stock_code')
-        current_price = float(request.args.get('current_price'))
-
-        return render_template('trading_zone.html', stock_code=stock_code, current_price=current_price,
-                               buy_price=BUY_PRICE, sell_price=SELL_PRICE, records=records, result_message=None)
 
 if __name__ == '__main__':
     app.run(debug=True)

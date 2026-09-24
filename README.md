@@ -20,15 +20,20 @@
 ## 專案結構
 
 ```
-app.py               # Flask 主程式（查詢、繪圖、交易試算路由）
+app.py                  # Flask 路由：查詢、繪圖、交易試算
+stock_service.py        # 資料層：Yahoo 股價爬蟲、twstock 即時 / 歷史資料
+trading.py              # 商業邏輯：買賣條件判斷與報酬率計算
 templates/
-  index.html         # 首頁：輸入股票代碼與期間
-  stock.html         # 查詢結果：即時資訊表格與互動圖表
-  trading_zone.html  # 交易試算區
-個股資訊.py           # CLI 版：即時資訊與走勢圖
-特定時間.py           # CLI 版：指定期間歷史資料
-自動交易.py           # CLI 版：買賣價位條件判斷
+  index.html            # 首頁：輸入股票代碼與期間
+  stock.html            # 查詢結果：即時資訊表格與互動圖表
+  trading_zone.html     # 交易試算區
+scripts/                # 命令列小工具（共用上方模組）
+  realtime_info.py      # 即時資訊與走勢圖
+  history_by_period.py  # 指定期間歷史資料
+  price_alert.py        # 買賣價位試算
 ```
+
+資料取得、商業邏輯與網頁路由分層，網頁版與命令列工具共用同一套判斷規則。
 
 ## 執行方式
 

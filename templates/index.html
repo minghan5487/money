@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票查詢</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <style>
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -50,6 +50,7 @@
 <body>
     <div class="container mt-5">
         <h1 class="text-center">股票查詢</h1>
+        {% if error %}<div class="alert alert-danger mt-4">{{ error }}</div>{% endif %}
         <form action="/stock" method="post" class="mt-4">
             <div class="form-group">
                 <label for="stock_code">股票代碼:</label>
@@ -58,7 +59,8 @@
             <div class="form-group">
                 <label for="year">年份:</label>
                 <select id="year" name="year" class="form-control">
-                    {% for year in range(2010, 2025) %}
+                    <option value="">最近 31 個交易日</option>
+                    {% for year in range(current_year, 2009, -1) %}
                     <option value="{{ year }}">{{ year }}</option>
                     {% endfor %}
                 </select>
@@ -66,6 +68,7 @@
             <div class="form-group">
                 <label for="month">月份:</label>
                 <select id="month" name="month" class="form-control">
+                    <option value="">全年（1 月至今）</option>
                     {% for month in range(1, 13) %}
                     <option value="{{ month }}">{{ month }}</option>
                     {% endfor %}
