@@ -11,6 +11,8 @@ app = Flask(__name__)
 
 state = {'buy_price': None, 'sell_price': None, 'records': []}
 
+POPULAR = [('2330', '台積電'), ('2317', '鴻海'), ('2454', '聯發科'), ('2382', '廣達'), ('0050', '元大台灣50')]
+
 
 def parse_price(value):
     try:
@@ -20,12 +22,17 @@ def parse_price(value):
 
 
 def plot_html(fig):
-    return pio.to_html(fig, full_html=False)
+    fig.update_layout(template='plotly_white', height=340, margin=dict(l=40, r=20, t=50, b=40))
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+
+
+def render_index(error=None):
+    return render_template('index.html', current_year=date.today().year, popular=POPULAR, error=error)
 
 
 @app.route('/')
 def index():
-    return render_template('index.html', current_year=date.today().year)
+    return render_index()
 
 
 @app.route('/stock', methods=['POST'])
@@ -35,27 +42,30 @@ def stock():
     month = request.form.get('month')
 
     if not is_valid_code(code):
-        return render_template('index.html', current_year=date.today().year, error=f'找不到股票代碼 {code}')
+        return render_index(f'找不到股票代碼 {code}')
 
     try:
         title, current_price, change = get_stock_price(code)
         summary, order_book = get_realtime(code)
         history = get_history(code, year, month)
     except Exception as e:
-        return render_template('index.html', current_year=date.today().year, error=f'查詢 {code} 失敗：{e}')
+        return render_index(f'查詢 {code} 失敗：{e}')
 
     price_plot = amount_plot = ''
     if not history.empty:
-        price_plot = plot_html(px.line(history, x='日期', y='收盤價', title=f'{code} 收盤價'))
-        amount_plot = plot_html(px.bar(history, x='日期', y='成交量(張)', title=f'{code} 成交量'))
+        price_plot = plot_html(px.line(history, x='日期', y='收盤價', title='收盤價'))
+        amount_plot = plot_html(px.bar(history, x='日期', y='成交量(張)', title='成交量'))
 
-    table_cls = 'table table-bordered table-striped text-center'
-    result = ''
-    if summary is not None:
-        result = summary.to_html(classes=table_cls, index=False) + order_book.to_html(classes=table_cls, index=False)
+    change_pct = None
+    if current_price and change is not None and current_price != change:
+        change_pct = change / (current_price - change) * 100
 
-    return render_template('stock.html', stock_code=code, title=title, current_price=current_price,
-                           change=change, result=result, price_plot=price_plot, amount_plot=amount_plot)
+    return render_template(
+        'stock.html', stock_code=code, title=title, current_price=current_price, change=change, change_pct=change_pct,
+        summary=None if summary is None else summary.iloc[0].to_dict(),
+        order_book=None if order_book is None else order_book.to_dict('records'),
+        price_plot=price_plot, amount_plot=amount_plot,
+    )
 
 
 @app.route('/trading_zone', methods=['GET', 'POST'])

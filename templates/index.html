@@ -1,81 +1,51 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股票查詢</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            max-width: 600px;
-            margin: 50px auto;
-        }
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            color: #007bff;
-        }
-        .form-group label {
-            font-weight: bold;
-            color: #333;
-        }
-        .form-control {
-            border-radius: 5px;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary {
-            background-color: #007bff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 50px;
-            transition: background-color 0.3s, box-shadow 0.3s;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-        }
-    </style>
-</head>
-<body>
-    <div class="container mt-5">
-        <h1 class="text-center">股票查詢</h1>
-        {% if error %}<div class="alert alert-danger mt-4">{{ error }}</div>{% endif %}
-        <form action="/stock" method="post" class="mt-4">
-            <div class="form-group">
-                <label for="stock_code">股票代碼:</label>
-                <input type="text" class="form-control" id="stock_code" name="stock_code" required>
-            </div>
-            <div class="form-group">
-                <label for="year">年份:</label>
-                <select id="year" name="year" class="form-control">
-                    <option value="">最近 31 個交易日</option>
-                    {% for year in range(current_year, 2009, -1) %}
-                    <option value="{{ year }}">{{ year }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="month">月份:</label>
-                <select id="month" name="month" class="form-control">
-                    <option value="">全年（1 月至今）</option>
-                    {% for month in range(1, 13) %}
-                    <option value="{{ month }}">{{ month }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">查詢</button>
-        </form>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card p-4">
+            <h1 class="h4 mb-1">股票查詢</h1>
+            <p class="text-muted small mb-4">輸入台股代碼，查看即時報價、五檔與歷史走勢</p>
+
+            {% if error %}
+            <div class="alert alert-danger py-2"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+            {% endif %}
+
+            <form action="{{ url_for('stock') }}" method="post">
+                <div class="mb-3">
+                    <label for="stock_code" class="form-label">股票代碼</label>
+                    <input type="text" class="form-control form-control-lg" id="stock_code" name="stock_code"
+                           placeholder="例如 2330" required autofocus>
+                    <div class="mt-2">
+                        {% for code, name in popular %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1"
+                                onclick="document.getElementById('stock_code').value='{{ code }}'">{{ code }} {{ name }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <label for="year" class="form-label">年份</label>
+                        <select id="year" name="year" class="form-select">
+                            <option value="">最近 31 個交易日</option>
+                            {% for year in range(current_year, 2009, -1) %}
+                            <option value="{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label for="month" class="form-label">月份</label>
+                        <select id="month" name="month" class="form-select">
+                            <option value="">整年</option>
+                            {% for month in range(1, 13) %}
+                            <option value="{{ month }}">{{ month }} 月</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-search me-1"></i>查詢</button>
+            </form>
+        </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
