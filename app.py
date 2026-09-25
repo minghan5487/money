@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.io as pio
 from flask import Flask, redirect, render_template, request, url_for
 
-from stock_service import get_history, get_realtime_table, get_stock_price
+from stock_service import get_history, get_realtime, get_stock_price, is_valid_code
 from trading import evaluate_order
 
 app = Flask(__name__)
@@ -34,9 +34,12 @@ def stock():
     year = request.form.get('year')
     month = request.form.get('month')
 
+    if not is_valid_code(code):
+        return render_template('index.html', current_year=date.today().year, error=f'找不到股票代碼 {code}')
+
     try:
         title, current_price, change = get_stock_price(code)
-        realtime = get_realtime_table(code)
+        summary, order_book = get_realtime(code)
         history = get_history(code, year, month)
     except Exception as e:
         return render_template('index.html', current_year=date.today().year, error=f'查詢 {code} 失敗：{e}')
@@ -44,9 +47,12 @@ def stock():
     price_plot = amount_plot = ''
     if not history.empty:
         price_plot = plot_html(px.line(history, x='日期', y='收盤價', title=f'{code} 收盤價'))
-        amount_plot = plot_html(px.bar(history, x='日期', y='成交量', title=f'{code} 成交量'))
+        amount_plot = plot_html(px.bar(history, x='日期', y='成交量(張)', title=f'{code} 成交量'))
 
-    result = '' if realtime is None else realtime.to_html(classes='table table-bordered table-striped text-center')
+    table_cls = 'table table-bordered table-striped text-center'
+    result = ''
+    if summary is not None:
+        result = summary.to_html(classes=table_cls, index=False) + order_book.to_html(classes=table_cls, index=False)
 
     return render_template('stock.html', stock_code=code, title=title, current_price=current_price,
                            change=change, result=result, price_plot=price_plot, amount_plot=amount_plot)

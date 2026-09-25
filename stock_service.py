@@ -6,9 +6,10 @@ from bs4 import BeautifulSoup
 YAHOO_URL = 'https://tw.stock.yahoo.com/quote/{}'
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
-REALTIME_COLUMNS = ['股票代碼', '地區', '股票名稱', '公司全名', '現在時間', '最新成交價', '成交量', '累計成交量',
-                    '最佳5檔賣出價', '最佳5檔賣出量', '最佳5檔買進價', '最佳5檔買進量', '開盤價', '最高價', '最低價']
-HISTORY_COLUMNS = ['日期', '成交股數', '成交量', '開盤價', '最高價', '最低價', '收盤價', '漲跌價差', '成交筆數']
+HISTORY_COLUMNS = {
+    'date': '日期', 'capacity': '成交股數', 'turnover': '成交金額', 'open': '開盤價', 'high': '最高價',
+    'low': '最低價', 'close': '收盤價', 'change': '漲跌價差', 'transaction': '成交筆數',
+}
 
 
 def to_float(text):
@@ -23,24 +24,48 @@ def get_stock_price(code):
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, 'html.parser')
 
-    title = soup.find('h1')
+    titles = soup.find_all('h1')
     price = soup.select_one('.Fz\\(32px\\)')
-    change = soup.select_one('.Fz\\(20px\\)')
+    change_el = soup.select_one('.Fz\\(20px\\)')
+
+    change = to_float(change_el.get_text()) if change_el else None
+    if change and 'C($c-trend-down)' in change_el.get('class', []):
+        change = -change
 
     return (
-        title.get_text(strip=True) if title else code,
+        titles[-1].get_text(strip=True) if titles else code,
         to_float(price.get_text()) if price else None,
-        to_float(change.get_text()) if change else None,
+        change,
     )
 
 
-def get_realtime_table(code):
+def is_valid_code(code):
+    return code in twstock.codes
+
+
+def get_realtime(code):
     data = twstock.realtime.get(code)
     if not data.get('success'):
-        return None
-    df = pd.DataFrame(data).T.iloc[1:3]
-    df.columns = REALTIME_COLUMNS
-    return df
+        return None, None
+
+    info, rt = data['info'], data['realtime']
+    summary = pd.DataFrame([{
+        '股票名稱': info['name'],
+        '時間': info['time'],
+        '成交價': to_float(rt['latest_trade_price']),
+        '開盤價': to_float(rt['open']),
+        '最高價': to_float(rt['high']),
+        '最低價': to_float(rt['low']),
+        '單量(張)': rt['trade_volume'],
+        '累計成交量(張)': rt['accumulate_trade_volume'],
+    }])
+    order_book = pd.DataFrame({
+        '買進價': map(to_float, rt['best_bid_price']),
+        '買進量': rt['best_bid_volume'],
+        '賣出價': map(to_float, rt['best_ask_price']),
+        '賣出量': rt['best_ask_volume'],
+    })
+    return summary, order_book
 
 
 def get_history(code, year=None, month=None):
@@ -52,7 +77,7 @@ def get_history(code, year=None, month=None):
     else:
         rows = stock.fetch_31()
 
-    df = pd.DataFrame(rows)
-    if not df.empty:
-        df.columns = HISTORY_COLUMNS
+    df = pd.DataFrame([r._asdict() for r in rows], columns=list(HISTORY_COLUMNS))
+    df = df.rename(columns=HISTORY_COLUMNS)
+    df['成交量(張)'] = df['成交股數'] // 1000
     return df

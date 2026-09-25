@@ -12,4 +12,4 @@ if __name__ == '__main__':
 
     if not history.empty:
         px.line(history, x='日期', y='收盤價', title=f'{code} 收盤價').show()
-        px.bar(history, x='日期', y='成交量', title=f'{code} 成交量').show()
+        px.bar(history, x='日期', y='成交量(張)',title=f'{code} 成交量').show()
