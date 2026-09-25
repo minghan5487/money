@@ -1,10 +1,5 @@
 import pandas as pd
-import requests
 import twstock
-from bs4 import BeautifulSoup
-
-YAHOO_URL = 'https://tw.stock.yahoo.com/quote/{}'
-HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
 HISTORY_COLUMNS = {
     'date': '日期', 'capacity': '成交股數', 'turnover': '成交金額', 'open': '開盤價', 'high': '最高價',
@@ -14,58 +9,36 @@ HISTORY_COLUMNS = {
 
 def to_float(text):
     try:
-        return float(text.strip().replace(',', '').replace('+', '').replace('−', '-'))
-    except (AttributeError, ValueError):
+        return float(str(text).replace(',', ''))
+    except ValueError:
         return None
-
-
-def get_stock_price(code):
-    resp = requests.get(YAHOO_URL.format(code), headers=HEADERS, timeout=10)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, 'html.parser')
-
-    titles = soup.find_all('h1')
-    price = soup.select_one('.Fz\\(32px\\)')
-    change_el = soup.select_one('.Fz\\(20px\\)')
-
-    change = to_float(change_el.get_text()) if change_el else None
-    if change and 'C($c-trend-down)' in change_el.get('class', []):
-        change = -change
-
-    return (
-        titles[-1].get_text(strip=True) if titles else code,
-        to_float(price.get_text()) if price else None,
-        change,
-    )
 
 
 def is_valid_code(code):
     return code in twstock.codes
 
 
+def get_name(code):
+    info = twstock.codes.get(code)
+    return info.name if info else code
+
+
 def get_realtime(code):
     data = twstock.realtime.get(code)
     if not data.get('success'):
-        return None, None
+        return None
 
-    info, rt = data['info'], data['realtime']
-    summary = pd.DataFrame([{
-        '股票名稱': info['name'],
-        '時間': info['time'],
-        '成交價': to_float(rt['latest_trade_price']),
-        '開盤價': to_float(rt['open']),
-        '最高價': to_float(rt['high']),
-        '最低價': to_float(rt['low']),
-        '單量(張)': rt['trade_volume'],
-        '累計成交量(張)': rt['accumulate_trade_volume'],
-    }])
-    order_book = pd.DataFrame({
-        '買進價': map(to_float, rt['best_bid_price']),
-        '買進量': rt['best_bid_volume'],
-        '賣出價': map(to_float, rt['best_ask_price']),
-        '賣出量': rt['best_ask_volume'],
-    })
-    return summary, order_book
+    rt = data['realtime']
+    return {
+        'time': data['info']['time'],
+        'price': to_float(rt['latest_trade_price']),
+        'volume': rt['accumulate_trade_volume'],
+        'order_book': [
+            {'bid_volume': bv, 'bid': to_float(bp), 'ask': to_float(ap), 'ask_volume': av}
+            for bp, bv, ap, av in zip(rt['best_bid_price'], rt['best_bid_volume'],
+                                      rt['best_ask_price'], rt['best_ask_volume'])
+        ],
+    }
 
 
 def get_history(code, year=None, month=None):

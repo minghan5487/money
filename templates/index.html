@@ -1,27 +1,23 @@
 {% extends 'base.html' %}
 
+{% macro trend(value) %}{{ 'up' if value and value > 0 else 'down' if value and value < 0 else 'flat' }}{% endmacro %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6 col-md-8">
-        <div class="card p-4">
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card p-4 mb-4">
             <h1 class="h4 mb-1">股票查詢</h1>
-            <p class="text-muted small mb-4">輸入台股代碼，查看即時報價、五檔與歷史走勢</p>
+            <p class="text-muted small mb-4">輸入台股代碼，查看收盤行情、估值、即時五檔與歷史走勢</p>
 
             {% if error %}
             <div class="alert alert-danger py-2"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
             {% endif %}
 
-            <form action="{{ url_for('stock') }}" method="post">
+            <form action="{{ url_for('stock') }}" method="post" id="search">
                 <div class="mb-3">
                     <label for="stock_code" class="form-label">股票代碼</label>
                     <input type="text" class="form-control form-control-lg" id="stock_code" name="stock_code"
                            placeholder="例如 2330" required autofocus>
-                    <div class="mt-2">
-                        {% for code, name in popular %}
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1"
-                                onclick="document.getElementById('stock_code').value='{{ code }}'">{{ code }} {{ name }}</button>
-                        {% endfor %}
-                    </div>
                 </div>
                 <div class="row g-3 mb-4">
                     <div class="col-6">
@@ -45,6 +41,41 @@
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-search me-1"></i>查詢</button>
             </form>
+        </div>
+
+        {% if taiex %}
+        <div class="card p-4">
+            <div class="stat-label">發行量加權股價指數・{{ taiex.date }}</div>
+            <div class="d-flex align-items-baseline gap-3 {{ trend(taiex.change) }}">
+                <span class="price">{{ '{:,.2f}'.format(taiex.index) }}</span>
+                <span class="fs-5 fw-semibold">{{ '{:+,.2f}'.format(taiex.change) }} ({{ '{:+.2f}'.format(taiex.change_pct) }}%)</span>
+            </div>
+            <div class="stat-label mt-2">成交金額 {{ '{:,.0f}'.format(taiex.value / 1e8) }} 億</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card p-4 h-100">
+            <h2 class="h6 mb-3">今日成交量排行</h2>
+            {% if top_volume %}
+            <table class="table table-hover table-quote align-middle mb-0">
+                <thead><tr><th class="text-start">股票</th><th>收盤</th><th>漲跌</th><th>成交量(張)</th></tr></thead>
+                <tbody>
+                {% for s in top_volume %}
+                <tr role="button" onclick="document.getElementById('stock_code').value='{{ s.code }}'; document.getElementById('search').submit()">
+                    <td class="text-start"><span class="text-muted me-2">{{ s.code }}</span>{{ s.name }}</td>
+                    <td>{{ s.close }}</td>
+                    <td class="{{ trend(s.change) }}">{{ '{:+.2f}'.format(s.change) }}</td>
+                    <td>{{ '{:,}'.format(s.volume) }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-muted text-center py-5">暫時無法取得排行資料</div>
+            {% endif %}
+            <div class="text-end text-muted small mt-3">資料來源：臺灣證券交易所 OpenAPI</div>
         </div>
     </div>
 </div>

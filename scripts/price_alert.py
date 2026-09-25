@@ -1,6 +1,7 @@
 import sys
 
-from stock_service import get_stock_price
+import twse_api
+from stock_service import get_name, get_realtime, is_valid_code
 from trading import evaluate_order
 
 
@@ -11,11 +12,16 @@ def ask_price(prompt):
 
 if __name__ == '__main__':
     code = input('請輸入股票代碼：').strip()
-    title, current_price, change = get_stock_price(code)
+    if not is_valid_code(code):
+        sys.exit(f'找不到股票代碼 {code}')
+
+    realtime = get_realtime(code)
+    quote = twse_api.get_quote(code)
+    current_price = (realtime or {}).get('price') or (quote or {}).get('close')
     if current_price is None:
         sys.exit('無法取得當前價格')
 
-    print(f'{title}：{current_price}（{change}）')
+    print(f'{get_name(code)}：{current_price}')
 
     try:
         buy_price = ask_price('買入價格（留空略過）：')

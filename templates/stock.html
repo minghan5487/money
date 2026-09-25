@@ -1,35 +1,36 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ title }} {{ stock_code }}{% endblock %}
+{% block title %}{{ name }} {{ stock_code }}{% endblock %}
 
 {% block head %}
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 {% endblock %}
 
 {% block content %}
+{% set change = quote.change if quote else none %}
 {% set trend = 'up' if change and change > 0 else 'down' if change and change < 0 else 'flat' %}
+
 <div class="card p-4 mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-end gap-3">
         <div>
             <div class="text-muted">{{ stock_code }}</div>
-            <h1 class="h3 mb-2">{{ title }}</h1>
-            {% if current_price is not none %}
+            <h1 class="h3 mb-2">{{ name }}</h1>
+            {% if quote %}
             <div class="d-flex align-items-baseline gap-3 {{ trend }}">
-                <span class="price">{{ '{:,.2f}'.format(current_price) }}</span>
-                {% if change is not none %}
+                <span class="price">{{ '{:,.2f}'.format(quote.close) }}</span>
                 <span class="fs-5 fw-semibold">
                     <i class="bi bi-caret-{{ 'up' if trend == 'up' else 'down' if trend == 'down' else 'right' }}-fill"></i>
                     {{ '{:+.2f}'.format(change) }}
-                    {% if change_pct is not none %}({{ '{:+.2f}'.format(change_pct) }}%){% endif %}
+                    {% if quote.change_pct is not none %}({{ '{:+.2f}'.format(quote.change_pct) }}%){% endif %}
                 </span>
-                {% endif %}
             </div>
+            <div class="stat-label mt-1">{{ quote.date }} 收盤</div>
             {% else %}
-            <div class="text-muted">無法取得即時價格</div>
+            <div class="text-muted">查無上市收盤資料（上櫃股票僅提供即時資訊）</div>
             {% endif %}
         </div>
         <div class="d-flex gap-2">
-            {% if current_price is not none %}
+            {% if current_price %}
             <a class="btn btn-primary" href="{{ url_for('trading_zone', stock_code=stock_code, current_price=current_price) }}">
                 <i class="bi bi-calculator me-1"></i>交易試算
             </a>
@@ -38,34 +39,51 @@
         </div>
     </div>
 
-    {% if summary %}
+    {% if quote %}
     <hr>
     <div class="row g-3 text-center">
-        {% for label in ['開盤價', '最高價', '最低價', '單量(張)', '累計成交量(張)'] %}
-        <div class="col">
+        {% set stats = [
+            ('開盤價', quote.open), ('最高價', quote.high), ('最低價', quote.low),
+            ('成交量(張)', '{:,}'.format(quote.volume)), ('成交筆數', '{:,}'.format(quote.transactions)),
+        ] %}
+        {% if valuation %}
+        {% set stats = stats + [
+            ('本益比', valuation.pe or '—'), ('殖利率(%)', valuation.dividend_yield), ('股價淨值比', valuation.pb),
+        ] %}
+        {% endif %}
+        {% for label, value in stats %}
+        <div class="col-4 col-md-3 col-xl">
             <div class="stat-label">{{ label }}</div>
-            <div class="stat-value">{{ summary[label] }}</div>
+            <div class="stat-value">{{ value }}</div>
         </div>
         {% endfor %}
     </div>
-    <div class="text-end text-muted small mt-2">資料時間 {{ summary['時間'] }}</div>
     {% endif %}
 </div>
 
 <div class="row g-4">
-    {% if order_book %}
+    {% if realtime %}
     <div class="col-lg-4">
         <div class="card p-3 h-100">
-            <h2 class="h6 mb-3">最佳五檔</h2>
+            <div class="d-flex justify-content-between align-items-baseline mb-3">
+                <h2 class="h6 mb-0">即時五檔</h2>
+                <span class="stat-label">{{ realtime.time }}</span>
+            </div>
+            <div class="mb-3">
+                <span class="stat-label">成交價</span>
+                <span class="stat-value ms-2">{{ realtime.price or '—' }}</span>
+                <span class="stat-label ms-3">累計量</span>
+                <span class="stat-value ms-2">{{ realtime.volume }}</span>
+            </div>
             <table class="table table-sm table-quote mb-0">
                 <thead><tr><th>買量</th><th>買價</th><th>賣價</th><th>賣量</th></tr></thead>
                 <tbody>
-                {% for row in order_book %}
+                {% for row in realtime.order_book %}
                 <tr>
-                    <td>{{ row['買進量'] }}</td>
-                    <td class="up fw-semibold">{{ row['買進價'] }}</td>
-                    <td class="down fw-semibold">{{ row['賣出價'] }}</td>
-                    <td>{{ row['賣出量'] }}</td>
+                    <td>{{ row.bid_volume }}</td>
+                    <td class="up fw-semibold">{{ row.bid }}</td>
+                    <td class="down fw-semibold">{{ row.ask }}</td>
+                    <td>{{ row.ask_volume }}</td>
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -73,9 +91,10 @@
         </div>
     </div>
     {% endif %}
-    <div class="{{ 'col-lg-8' if order_book else 'col-12' }}">
+    <div class="{{ 'col-lg-8' if realtime else 'col-12' }}">
         <div class="card p-3 mb-4">{{ price_plot | safe }}</div>
         <div class="card p-3">{{ amount_plot | safe }}</div>
     </div>
 </div>
+<div class="text-end text-muted small mt-3">收盤行情、估值：臺灣證券交易所 OpenAPI；即時五檔、歷史走勢：twstock</div>
 {% endblock %}
